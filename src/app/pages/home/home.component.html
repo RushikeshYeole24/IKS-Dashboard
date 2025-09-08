@@ -1,24 +1,19 @@
-<h2>User Table</h2>
-<table mat-table [dataSource]="users" class="mat-elevation-z8">
+<h2>Absentee Data</h2>
 
-  <ng-container matColumnDef="id">
-    <th mat-header-cell *matHeaderCellDef>ID</th>
-    <td mat-cell *matCellDef="let user">{{ user.id }}</td>
-  </ng-container>
+<div *ngIf="isLoading" class="loading">
+  Loading data from server...
+</div>
 
-  <ng-container matColumnDef="name">
-    <th mat-header-cell *matHeaderCellDef>Name</th>
-    <td mat-cell *matCellDef="let user">{{ user.name }}</td>
-  </ng-container>
+<div *ngIf="error" class="error">
+  {{ error }}
+</div>
 
-  <ng-container matColumnDef="email">
-    <th mat-header-cell *matHeaderCellDef>Email</th>
-    <td mat-cell *matCellDef="let user">{{ user.email }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="role">
-    <th mat-header-cell *matHeaderCellDef>Role</th>
-    <td mat-cell *matCellDef="let user">{{ user.role }}</td>
+<table mat-table [dataSource]="absenteeData" class="mat-elevation-z8" *ngIf="!isLoading && !error">
+  
+  <!-- Dynamic columns based on your SQL table structure -->
+  <ng-container *ngFor="let column of displayedColumns" [matColumnDef]="column">
+    <th mat-header-cell *matHeaderCellDef>{{ column | titlecase }}</th>
+    <td mat-cell *matCellDef="let row">{{ row[column] }}</td>
   </ng-container>
 
   <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
