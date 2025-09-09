@@ -1,6 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
 import { Chart, ChartData, ChartOptions } from 'chart.js';
+import { CommonModule } from '@angular/common';
 import { UserService } from '../../services/user.service';
 
 // Import required Chart.js modules
@@ -18,11 +19,11 @@ import {
 
 // ✅ Register all chart components to avoid conflicts
 Chart.register(
-  Title,
+  Title,  
   Tooltip,
   Legend,
   ArcElement,
-  PieController,
+  PieController,  
   BarElement,
   BarController,
   CategoryScale,
@@ -33,85 +34,93 @@ Chart.register(
   selector: 'app-reports',
   templateUrl: './reports.component.html',
   styleUrls: ['./reports.component.scss'],
-  imports: [BaseChartDirective], // ✅ Import chart module here
+  imports: [BaseChartDirective, CommonModule],
 })
 export class ReportsComponent implements OnInit {
   private userService = inject(UserService);
 
-  chartData: ChartData<'pie'> = {
+  chartData: ChartData<'bar'> = {
     labels: [],
     datasets: [
       {
+        label: 'Absenteeism Hours',
         data: [],
-        backgroundColor: [
-          '#FF6384',
-          '#36A2EB',
-          '#FFCE56',
-          '#4BC0C0',
-          '#9966FF',
-          '#FF9F40',
-          '#C9CBCF',
-        ],
-        borderWidth: 2,
-        borderColor: '#fff',
+        backgroundColor: '#36A2EB',
+        borderColor: '#1E88E5',
+        borderWidth: 1,
+        borderRadius: 4,
       },
     ],
   };
 
+  isLoading = true;
+  error: string | null = null;
+
   ngOnInit() {
-    this.loadChartData();
+    this.loadAbsenteeismData();
   }
 
-  private loadChartData() {
-    const roleDistribution = this.userService.getRoleDistribution();
-    const roles = Object.keys(roleDistribution);
-    const counts = Object.values(roleDistribution);
+  private loadAbsenteeismData() {
+    this.userService.getAbsenteeismReport().subscribe({
+      next: (data) => {
+        const ids = data.map(item => `ID: ${item.id}`);
+        const hours = data.map(item => item.totalHours);
 
-    this.chartData = {
-      labels: roles,
-      datasets: [
-        {
-          data: counts,
-          backgroundColor: [
-            '#FF6384',
-            '#36A2EB',
-            '#FFCE56',
-            '#4BC0C0',
-            '#9966FF',
-            '#FF9F40',
-            '#C9CBCF',
-          ].slice(0, roles.length),
-          borderWidth: 2,
-          borderColor: '#fff',
-        },
-      ],
-    };
+        this.chartData = {
+          labels: ids,
+          datasets: [
+            {
+              label: 'Total Absenteeism Hours',
+              data: hours,
+              backgroundColor: '#36A2EB',
+              borderColor: '#1E88E5',
+              borderWidth: 1,
+              borderRadius: 4,
+            },
+          ],
+        };
+        
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Error fetching absenteeism data:', err);
+        this.error = 'Failed to load absenteeism report data';
+        this.isLoading = false;
+      }
+    });
   }
 
-  chartOptions: ChartOptions = {
+  chartOptions: ChartOptions<'bar'> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'right',
-        labels: {
-          usePointStyle: true,
-          padding: 20,
-        },
+        display: true,
+        position: 'top',
       },
       tooltip: {
         callbacks: {
           label: (context) => {
-            const label = context.label || '';
-            const value = context.parsed as number;
-            const data = context.dataset.data as number[];
-            const total = data.reduce((a, b) => (a || 0) + (b || 0), 0);
-            const percentage =
-              total > 0 ? ((value / total) * 100).toFixed(1) : '0';
-            return `${label}: ${value} (${percentage}%)`;
+            const value = context.parsed.y;
+            return `${context.dataset.label}: ${value} hours`;
           },
         },
       },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Hours'
+        }
+      },
+      x: {
+        title: {
+          display: true,
+          text: 'Employee ID'
+        }
+      }
     },
   };
 }
